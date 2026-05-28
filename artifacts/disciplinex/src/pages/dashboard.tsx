@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Layout } from "@/components/layout";
 import { ScoreRing } from "@/components/score-ring";
 import { InsightCard } from "@/components/insight-card";
@@ -10,29 +10,73 @@ import { AddTaskModal } from "@/components/add-task-modal";
 import { AnimatedNumber } from "@/components/animated-number";
 import { useTasks, useToggleTask } from "@/hooks/use-tasks";
 import { useProfile } from "@/hooks/use-profile";
+import { useDiscipline } from "@/hooks/use-momentum";
 import {
-  disciplineScore, streakDays, totalXP, completionPct,
-  todaysTasks, momentum7d, subjectMix, generateInsights,
-  firstName, greetingPrefix, daysLeft,
+  streakDays, totalXP, completionPct, todaysTasks,
+  momentum7d, subjectMix, generateInsights, firstName,
+  greetingPrefix, daysLeft, goalProgress,
 } from "@/lib/analytics";
+import type { ComputedDiscipline } from "@/lib/momentum";
 import { useGoals } from "@/hooks/use-goals";
-import { goalProgress } from "@/lib/analytics";
 import { Link } from "wouter";
 import {
   AreaChart, Area, PieChart, Pie, Cell, ResponsiveContainer,
   Tooltip as RechartTooltip, XAxis, YAxis,
 } from "recharts";
-import { Plus, Flame, Trophy, Clock, CheckCircle2, Circle, ChevronRight, Zap } from "lucide-react";
+import {
+  Plus, Flame, Trophy, CheckCircle2, Circle,
+  ChevronRight, Zap, TrendingUp, TrendingDown, ShieldCheck,
+} from "lucide-react";
 import { motion } from "framer-motion";
-import { useEffect } from "react";
 import { getTodayCheckin } from "@/components/daily-checkin";
 
 function useTodayCheckin() {
   const [done, setDone] = useState<boolean | null>(null);
-  useEffect(() => {
-    setDone(!!getTodayCheckin());
-  }, []);
+  useEffect(() => { setDone(!!getTodayCheckin()); }, []);
   return done;
+}
+
+function getStatusMessage(
+  disc: ComputedDiscipline,
+  streak: number,
+  hasCompletedToday: boolean
+): { msg: string; urgent: boolean } {
+  const { score, tier, momentum, isDecaying, multiplier, ptsToNextTier, nextTierName } = disc;
+
+  if (streak > 2 && !hasCompletedToday) {
+    return {
+      msg: `Your ${streak}-day streak is at risk — complete one task to protect it`,
+      urgent: true,
+    };
+  }
+  if (isDecaying && score > 20) {
+    return { msg: "Momentum slipping. One strong day can reverse this.", urgent: true };
+  }
+  if (tier.name === "Mythic") {
+    return { msg: "MYTHIC tier — fewer than 0.5% of users reach this. Extraordinary.", urgent: false };
+  }
+  if (tier.name === "Legendary") {
+    return { msg: "Legendary discipline. Protect what you've built — this is rare.", urgent: false };
+  }
+  if (tier.name === "Elite") {
+    return { msg: "Elite tier. Top 10% consistency. Your future self is grateful.", urgent: false };
+  }
+  if (ptsToNextTier > 0 && ptsToNextTier <= 6) {
+    return { msg: `Only ${ptsToNextTier} pts from ${nextTierName}. Push today.`, urgent: false };
+  }
+  if (momentum >= 70 && score > 25) {
+    return { msg: `Momentum at ${multiplier}× — consistency is compounding. Keep the chain.`, urgent: false };
+  }
+  if (streak >= 7) {
+    return { msg: `${streak}-day streak. Your discipline compounds in ways you can't see yet.`, urgent: false };
+  }
+  if (score < 15 && streak === 0) {
+    return { msg: "Every discipline legend started at zero. Add one task to begin.", urgent: false };
+  }
+  return {
+    msg: `${tier.peerLabel} consistency. ${momentum > 25 ? `Momentum multiplier: ${multiplier}×.` : "Build daily momentum to accelerate."}`,
+    urgent: false,
+  };
 }
 
 export default function Dashboard() {
@@ -40,8 +84,9 @@ export default function Dashboard() {
   const goals = useGoals();
   const { profile } = useProfile();
   const toggle = useToggleTask();
+  const disc = useDiscipline();
+
   const name = firstName(profile?.name);
-  const score = disciplineScore(tasks);
   const streak = streakDays(tasks);
   const xp = totalXP(tasks);
   const pct = completionPct(tasks);
@@ -51,15 +96,18 @@ export default function Dashboard() {
   const insights = generateInsights(tasks, name);
   const checkinDone = useTodayCheckin();
 
+  const hasCompletedToday = todayList.some((t) => t.done);
+  const streakAtRisk = streak > 2 && !hasCompletedToday;
+  const status = getStatusMessage(disc, streak, hasCompletedToday);
+
   const [showCheckin, setShowCheckin] = useState(false);
   const [showAddTask, setShowAddTask] = useState(false);
   const [celebrate, setCelebrate] = useState(false);
 
   useEffect(() => {
-    if (checkinDone === false) {
-      const timer = setTimeout(() => setShowCheckin(true), 800);
-      return () => clearTimeout(timer);
-    }
+    if (checkinDone !== false) return;
+    const t = setTimeout(() => setShowCheckin(true), 800);
+    return () => clearTimeout(t);
   }, [checkinDone]);
 
   async function handleToggle(id: string, done: boolean) {
@@ -67,35 +115,69 @@ export default function Dashboard() {
     if (!done) setCelebrate(true);
   }
 
-  const statCards = [
-    { icon: Flame, label: "Streak", value: streak, suffix: "d", color: "text-orange-400 bg-orange-400/10" },
-    { icon: Trophy, label: "Total XP", value: xp, suffix: "", color: "text-chart-4 bg-chart-4/10" },
-    { icon: Clock, label: "Done Today", value: todayList.filter((t) => t.done).length, suffix: `/${todayList.length}`, color: "text-success bg-success/10" },
-    { icon: Zap, label: "Momentum", value: pct, suffix: "%", color: "text-primary bg-primary/10" },
-  ];
+  const nextTierIndex = disc.tier.min < 95 ? disc.ptsToNextTier : 0;
 
   return (
     <Layout>
-      <div className="max-w-5xl mx-auto px-4 py-6 space-y-6 animate-fade-in">
-        {/* Hero */}
+      <div className="max-w-5xl mx-auto px-4 py-6 space-y-4 animate-fade-in">
+
+        {/* ── Hero ────────────────────────────────────────────────── */}
         <section className="rounded-3xl bg-gradient-hero border border-border p-6 flex flex-col sm:flex-row items-start sm:items-center gap-6">
-          <ScoreRing score={score} size={130} />
+          <div className="shrink-0">
+            <ScoreRing score={disc.score} tier={disc.tier} size={148} />
+          </div>
+
           <div className="flex-1 min-w-0">
-            <p className="text-xs text-primary font-semibold uppercase tracking-widest mb-1">{greetingPrefix()}</p>
-            <h1 className="text-2xl font-bold mb-1">
-              {score >= 80
-                ? `You're on fire, ${name}`
-                : score >= 50
+            <p className="text-xs text-primary font-semibold uppercase tracking-widest mb-2">
+              {greetingPrefix()}
+            </p>
+
+            {/* Tier badge */}
+            <div className={`inline-flex items-center gap-2 rounded-full px-3 py-1 text-xs font-semibold mb-3 border ${disc.tier.bgClass} ${disc.tier.borderClass} ${disc.tier.textClass}`}>
+              <span className="size-1.5 rounded-full bg-current" />
+              {disc.tier.name}
+              <span className="opacity-50">·</span>
+              <span className="opacity-70">{disc.tier.peerLabel}</span>
+            </div>
+
+            <h1 className="text-2xl font-bold mb-1.5">
+              {disc.score >= 80
+                ? `You're elite, ${name}`
+                : disc.score >= 50
                 ? `Keep pushing, ${name}`
                 : `Start strong, ${name}`}
             </h1>
-            <p className="text-sm text-muted-foreground mb-4">
-              {score >= 80
-                ? "Top 5% discipline. Your future self is proud."
-                : score >= 50
-                ? "You're in motion. Every task compounds."
-                : "One completed task changes your trajectory."}
+
+            <p className={`text-sm mb-4 leading-relaxed ${status.urgent ? "text-warning font-medium" : "text-muted-foreground"}`}>
+              {status.urgent && <span className="mr-1">⚠</span>}
+              {status.msg}
             </p>
+
+            {/* Momentum bar */}
+            <div className="mb-4 max-w-xs">
+              <div className="flex items-center justify-between mb-1.5">
+                <span className="text-xs text-muted-foreground font-medium">Momentum</span>
+                <span className="text-xs font-semibold flex items-center gap-1">
+                  <span className={disc.tier.textClass}>{disc.multiplier.toFixed(1)}×</span>
+                  <span className="text-muted-foreground">· {disc.momentumLabel}</span>
+                  {disc.isDecaying ? (
+                    <TrendingDown className="size-3 text-destructive" />
+                  ) : disc.momentum > 20 ? (
+                    <TrendingUp className="size-3 text-success" />
+                  ) : null}
+                </span>
+              </div>
+              <div className="h-1.5 rounded-full bg-muted overflow-hidden">
+                <motion.div
+                  className="h-full rounded-full"
+                  style={{ background: `linear-gradient(90deg, ${disc.tier.ringFrom}, ${disc.tier.ringTo})` }}
+                  initial={{ width: 0 }}
+                  animate={{ width: `${disc.momentum}%` }}
+                  transition={{ duration: 1.3, ease: "easeOut" }}
+                />
+              </div>
+            </div>
+
             <button
               onClick={() => setShowAddTask(true)}
               data-testid="button-add-task-hero"
@@ -106,29 +188,107 @@ export default function Dashboard() {
           </div>
         </section>
 
-        {/* Stats row */}
+        {/* ── Stats row ───────────────────────────────────────────── */}
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-          {statCards.map(({ icon: Icon, label, value, suffix, color }, i) => (
-            <motion.div
-              key={label}
-              initial={{ opacity: 0, y: 16 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: i * 0.07, duration: 0.4 }}
-              className="rounded-2xl bg-card border border-card-border p-4 shadow-card"
-            >
-              <div className={`inline-flex size-8 rounded-xl items-center justify-center mb-2 ${color}`}>
-                <Icon className="size-4" />
-              </div>
-              <p className="text-xl font-bold tabular-nums">
-                <AnimatedNumber value={value} />{suffix}
+          {/* Streak */}
+          <motion.div
+            initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0, duration: 0.4 }}
+            className="rounded-2xl bg-card border border-card-border p-4 shadow-card"
+          >
+            <div className={`inline-flex size-8 rounded-xl items-center justify-center mb-2 ${streakAtRisk ? "text-warning bg-warning/10" : "text-orange-400 bg-orange-400/10"}`}>
+              <Flame className="size-4" />
+            </div>
+            <p className="text-xl font-bold tabular-nums">
+              <AnimatedNumber value={streak} />d
+            </p>
+            <p className="text-xs text-muted-foreground">Streak</p>
+            {streakAtRisk && (
+              <p className="text-[10px] text-warning mt-0.5 font-medium">At risk</p>
+            )}
+            {hasCompletedToday && streak > 0 && (
+              <p className="text-[10px] text-success mt-0.5 font-medium flex items-center gap-1">
+                <ShieldCheck className="size-2.5" /> Protected
               </p>
-              <p className="text-xs text-muted-foreground">{label}</p>
-            </motion.div>
-          ))}
+            )}
+          </motion.div>
+
+          {/* Momentum multiplier */}
+          <motion.div
+            initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.07, duration: 0.4 }}
+            className="rounded-2xl bg-card border border-card-border p-4 shadow-card"
+          >
+            <div className={`inline-flex size-8 rounded-xl items-center justify-center mb-2 ${disc.tier.bgClass} ${disc.tier.textClass}`}>
+              <Zap className="size-4" />
+            </div>
+            <p className={`text-xl font-bold tabular-nums ${disc.tier.textClass}`}>
+              {disc.multiplier.toFixed(1)}×
+            </p>
+            <p className="text-xs text-muted-foreground">Multiplier</p>
+            <p className={`text-[10px] mt-0.5 ${disc.tier.textClass} opacity-70`}>{disc.momentumLabel}</p>
+          </motion.div>
+
+          {/* Done today */}
+          <motion.div
+            initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.14, duration: 0.4 }}
+            className="rounded-2xl bg-card border border-card-border p-4 shadow-card"
+          >
+            <div className="inline-flex size-8 rounded-xl items-center justify-center mb-2 text-success bg-success/10">
+              <CheckCircle2 className="size-4" />
+            </div>
+            <p className="text-xl font-bold tabular-nums">
+              <AnimatedNumber value={todayList.filter((t) => t.done).length} />
+              <span className="text-muted-foreground text-sm">/{todayList.length}</span>
+            </p>
+            <p className="text-xs text-muted-foreground">Done Today</p>
+            {pct === 100 && todayList.length > 0 && (
+              <p className="text-[10px] text-success mt-0.5 font-medium">Perfect day!</p>
+            )}
+          </motion.div>
+
+          {/* XP */}
+          <motion.div
+            initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.21, duration: 0.4 }}
+            className="rounded-2xl bg-card border border-card-border p-4 shadow-card"
+          >
+            <div className="inline-flex size-8 rounded-xl items-center justify-center mb-2 text-chart-4 bg-chart-4/10">
+              <Trophy className="size-4" />
+            </div>
+            <p className="text-xl font-bold tabular-nums">
+              <AnimatedNumber value={xp} />
+            </p>
+            <p className="text-xs text-muted-foreground">Total XP</p>
+          </motion.div>
         </div>
 
+        {/* ── Tier progress bar ────────────────────────────────────── */}
+        <div className="rounded-2xl bg-card border border-card-border px-5 py-4 shadow-card">
+          <div className="flex items-center justify-between mb-2">
+            <div className="flex items-center gap-2">
+              <span className={`text-xs font-semibold ${disc.tier.textClass}`}>{disc.tier.name}</span>
+              <span className="text-xs text-muted-foreground">· score {disc.score}</span>
+            </div>
+            {nextTierIndex > 0 ? (
+              <span className="text-xs text-muted-foreground">
+                {disc.ptsToNextTier} pts to{" "}
+                <span className="font-semibold text-foreground">{disc.nextTierName}</span>
+              </span>
+            ) : (
+              <span className="text-xs text-success font-medium">Maximum tier</span>
+            )}
+          </div>
+          <div className="h-2 rounded-full bg-muted overflow-hidden">
+            <motion.div
+              className="h-full rounded-full"
+              style={{ background: `linear-gradient(90deg, ${disc.tier.ringFrom}, ${disc.tier.ringTo})` }}
+              initial={{ width: 0 }}
+              animate={{ width: `${disc.tierProgress}%` }}
+              transition={{ duration: 1.4, ease: "easeOut", delay: 0.15 }}
+            />
+          </div>
+        </div>
+
+        {/* ── Today's tasks + subject mix ──────────────────────────── */}
         <div className="grid lg:grid-cols-3 gap-4">
-          {/* Today's tasks */}
           <div className="lg:col-span-2 rounded-2xl bg-card border border-card-border p-5 shadow-card">
             <div className="flex items-center justify-between mb-4">
               <h2 className="font-semibold">Today's Tasks</h2>
@@ -136,6 +296,7 @@ export default function Dashboard() {
                 View all <ChevronRight className="size-3" />
               </Link>
             </div>
+
             {todayList.length === 0 ? (
               <div className="text-center py-8">
                 <p className="text-muted-foreground text-sm mb-3">No tasks yet. Champions plan their day.</p>
@@ -189,7 +350,6 @@ export default function Dashboard() {
               </div>
             )}
 
-            {/* Completion bar */}
             {todayList.length > 0 && (
               <div className="mt-4">
                 <div className="flex justify-between text-xs text-muted-foreground mb-1.5">
@@ -208,7 +368,7 @@ export default function Dashboard() {
                   <p className="text-xs text-primary mt-1.5 font-medium">So close — finish strong!</p>
                 )}
                 {pct === 100 && (
-                  <p className="text-xs text-success mt-1.5 font-semibold">100% complete. Legendary.</p>
+                  <p className="text-xs text-success mt-1.5 font-semibold">100% — momentum is compounding.</p>
                 )}
               </div>
             )}
@@ -248,7 +408,7 @@ export default function Dashboard() {
           </div>
         </div>
 
-        {/* 7-day momentum */}
+        {/* ── 7-day momentum chart ─────────────────────────────────── */}
         <div className="rounded-2xl bg-card border border-card-border p-5 shadow-card">
           <h2 className="font-semibold mb-4">7-Day Momentum</h2>
           <ResponsiveContainer width="100%" height={140}>
@@ -271,7 +431,6 @@ export default function Dashboard() {
         </div>
 
         <div className="grid md:grid-cols-2 gap-4">
-          {/* Weekly report */}
           <WeeklyReport tasks={tasks} name={name} />
 
           {/* Goals preview */}
@@ -323,7 +482,7 @@ export default function Dashboard() {
           </div>
         </div>
 
-        {/* Insights */}
+        {/* ── AI Insights ──────────────────────────────────────────── */}
         <div className="rounded-2xl bg-card border border-card-border p-5 shadow-card">
           <div className="flex items-center justify-between mb-4">
             <h2 className="font-semibold">AI Insights</h2>
@@ -338,7 +497,7 @@ export default function Dashboard() {
           </div>
         </div>
 
-        {/* Heatmap */}
+        {/* ── Activity Heatmap ─────────────────────────────────────── */}
         <div className="rounded-2xl bg-card border border-card-border p-5 shadow-card">
           <h2 className="font-semibold mb-4">Activity Heatmap</h2>
           <Heatmap tasks={tasks} />

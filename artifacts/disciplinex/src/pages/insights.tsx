@@ -3,7 +3,8 @@ import { InsightCard } from "@/components/insight-card";
 import { WeeklyReport } from "@/components/weekly-report";
 import { useTasks } from "@/hooks/use-tasks";
 import { useProfile } from "@/hooks/use-profile";
-import { generateInsights, disciplineScore, streakDays, completionPct, firstName } from "@/lib/analytics";
+import { useDiscipline } from "@/hooks/use-momentum";
+import { generateInsights, streakDays, completionPct, firstName } from "@/lib/analytics";
 import { ScoreRing } from "@/components/score-ring";
 import { Brain, Sparkles } from "lucide-react";
 import { motion } from "framer-motion";
@@ -19,15 +20,13 @@ const QUOTES = [
 export default function Insights() {
   const tasks = useTasks();
   const { profile } = useProfile();
+  const disc = useDiscipline();
   const name = firstName(profile?.name);
-  const score = disciplineScore(tasks);
+  const score = disc.score;
   const streak = streakDays(tasks);
   const pct = completionPct(tasks);
   const insights = generateInsights(tasks, name);
   const quote = QUOTES[new Date().getDate() % QUOTES.length];
-
-  const level = score >= 90 ? "Elite" : score >= 75 ? "Advanced" : score >= 55 ? "Intermediate" : score >= 30 ? "Building" : "Starting Out";
-  const nextLevel = score >= 90 ? "Elite" : score >= 75 ? "Elite (90+)" : score >= 55 ? "Advanced (75+)" : score >= 30 ? "Intermediate (55+)" : "Building (30+)";
 
   return (
     <Layout>
@@ -43,17 +42,19 @@ export default function Insights() {
           animate={{ opacity: 1, y: 0 }}
           className="rounded-3xl bg-gradient-hero border border-primary/20 p-6 flex flex-col sm:flex-row items-center gap-6"
         >
-          <ScoreRing score={score} size={120} />
+          <ScoreRing score={score} tier={disc.tier} size={120} />
           <div className="text-center sm:text-left">
-            <p className="text-xs text-primary font-semibold uppercase tracking-widest mb-1">Discipline Level</p>
-            <h2 className="text-3xl font-bold mb-1">{level}</h2>
+            <p className="text-xs text-primary font-semibold uppercase tracking-widest mb-1">Discipline Tier</p>
+            <h2 className={`text-3xl font-bold mb-1 ${disc.tier.textClass}`}>{disc.tier.name}</h2>
             <p className="text-sm text-muted-foreground mb-3">
-              {streak > 0 ? `${streak}-day streak · ` : ""}{pct}% today
+              {streak > 0 ? `${streak}-day streak · ` : ""}{pct}% today · {disc.tier.peerLabel}
             </p>
-            {score < 90 && (
+            {disc.ptsToNextTier > 0 && (
               <div className="inline-flex items-center gap-1.5 rounded-xl bg-primary/10 border border-primary/20 px-3 py-1.5">
                 <Sparkles className="size-3 text-primary" />
-                <span className="text-xs text-primary font-medium">Next: {nextLevel}</span>
+                <span className="text-xs text-primary font-medium">
+                  {disc.ptsToNextTier} pts to {disc.nextTierName}
+                </span>
               </div>
             )}
           </div>

@@ -5,9 +5,10 @@ import { useProfile, useUpdateProfile } from "@/hooks/use-profile";
 import { useTasks } from "@/hooks/use-tasks";
 import { useAuth } from "@/lib/auth";
 import { useGoals } from "@/hooks/use-goals";
+import { useDiscipline } from "@/hooks/use-momentum";
 import { goalProgress } from "@/lib/analytics";
 import {
-  disciplineScore, streakDays, totalXP, todaysTasks,
+  streakDays, totalXP, todaysTasks,
   initials, firstName,
 } from "@/lib/analytics";
 import { toast } from "sonner";
@@ -34,7 +35,8 @@ export default function Profile() {
   const [editing, setEditing] = useState(false);
   const [nameInput, setNameInput] = useState("");
 
-  const score = disciplineScore(tasks);
+  const disc = useDiscipline();
+  const score = disc.score;
   const streak = streakDays(tasks);
   const xp = totalXP(tasks);
   const todayDone = todaysTasks(tasks).filter((t) => t.done).length;
@@ -127,7 +129,7 @@ export default function Profile() {
                 </p>
               )}
             </div>
-            <ScoreRing score={score} size={90} label="score" />
+            <ScoreRing score={score} tier={disc.tier} size={90} />
           </div>
         </motion.div>
 

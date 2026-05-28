@@ -72,17 +72,17 @@ export function totalXP(tasks: Task[]) {
   return tasks.filter((t) => t.done).reduce((a, t) => a + t.duration * 4, 0);
 }
 
-export function disciplineScore(tasks: Task[]) {
-  if (!tasks.length) return 0;
-  const pctToday = completionPct(tasks);
-  const todayTotal = todaysTasks(tasks).length;
-  if (todayTotal > 0 && pctToday === 100) return 100;
-  const last7 = momentum7d(tasks);
-  const active = last7.filter((d) => d.tasks > 0 || d.score > 0);
-  const avg7 = active.length ? active.reduce((a, b) => a + b.score, 0) / active.length : pctToday;
-  const streak = streakDays(tasks);
-  const streakBoost = Math.min(100, streak * 14);
-  return Math.min(100, Math.round(pctToday * 0.5 + avg7 * 0.3 + streakBoost * 0.2));
+export function disciplineScore(_tasks: Task[]): number {
+  try {
+    const raw = localStorage.getItem("dx_momentum");
+    if (raw) {
+      const s = JSON.parse(raw) as { score?: number; version?: number };
+      if (s?.version === 1 && typeof s.score === "number") {
+        return Math.round(s.score);
+      }
+    }
+  } catch {}
+  return 0;
 }
 
 export function subjectMix(tasks: Task[]) {
