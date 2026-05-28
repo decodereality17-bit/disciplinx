@@ -82,15 +82,15 @@ export default function Analytics() {
             <AreaChart data={m7} margin={{ top: 5, right: 5, bottom: 0, left: -20 }}>
               <defs>
                 <linearGradient id="areaG" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="5%" stopColor="hsl(290 65% 62%)" stopOpacity={0.35} />
-                  <stop offset="95%" stopColor="hsl(290 65% 62%)" stopOpacity={0} />
+                  <stop offset="5%" stopColor="hsl(258 52% 68%)" stopOpacity={0.22} />
+                  <stop offset="95%" stopColor="hsl(258 52% 68%)" stopOpacity={0} />
                 </linearGradient>
               </defs>
-              <CartesianGrid strokeDasharray="3 3" stroke="hsl(262 18% 22%)" />
-              <XAxis dataKey="day" tick={{ fontSize: 11, fill: "hsl(262 8% 57%)" }} axisLine={false} tickLine={false} />
-              <YAxis domain={[0, 100]} tick={{ fontSize: 11, fill: "hsl(262 8% 57%)" }} axisLine={false} tickLine={false} />
+              <CartesianGrid strokeDasharray="3 3" stroke="hsl(240 8% 12%)" />
+              <XAxis dataKey="day" tick={{ fontSize: 11, fill: "hsl(240 6% 46%)" }} axisLine={false} tickLine={false} />
+              <YAxis domain={[0, 100]} tick={{ fontSize: 11, fill: "hsl(240 6% 46%)" }} axisLine={false} tickLine={false} />
               <RechartTooltip content={<CustomTooltip />} />
-              <Area type="monotone" dataKey="score" stroke="hsl(290 65% 62%)" strokeWidth={2.5} fill="url(#areaG)" dot={{ fill: "hsl(290 65% 62%)", r: 4, strokeWidth: 0 }} activeDot={{ r: 5 }} />
+              <Area type="monotone" dataKey="score" stroke="hsl(258 52% 68%)" strokeWidth={2} fill="url(#areaG)" dot={{ fill: "hsl(258 52% 68%)", r: 3, strokeWidth: 0 }} activeDot={{ r: 5 }} />
             </AreaChart>
           </ResponsiveContainer>
         </div>
@@ -102,11 +102,11 @@ export default function Analytics() {
             <p className="text-xs text-muted-foreground mb-4">Daily completion rate</p>
             <ResponsiveContainer width="100%" height={160}>
               <BarChart data={c15} margin={{ top: 5, right: 5, bottom: 0, left: -20 }} barSize={10}>
-                <CartesianGrid strokeDasharray="3 3" stroke="hsl(262 18% 22%)" />
-                <XAxis dataKey="day" tick={{ fontSize: 9, fill: "hsl(262 8% 57%)" }} axisLine={false} tickLine={false} />
-                <YAxis domain={[0, 100]} tick={{ fontSize: 10, fill: "hsl(262 8% 57%)" }} axisLine={false} tickLine={false} />
+                <CartesianGrid strokeDasharray="3 3" stroke="hsl(240 8% 12%)" />
+                <XAxis dataKey="day" tick={{ fontSize: 9, fill: "hsl(240 6% 46%)" }} axisLine={false} tickLine={false} />
+                <YAxis domain={[0, 100]} tick={{ fontSize: 10, fill: "hsl(240 6% 46%)" }} axisLine={false} tickLine={false} />
                 <RechartTooltip content={<CustomTooltip />} />
-                <Bar dataKey="consistency" fill="hsl(246 65% 64%)" radius={[4, 4, 0, 0]} />
+                <Bar dataKey="consistency" fill="hsl(222 56% 66%)" radius={[4, 4, 0, 0]} />
               </BarChart>
             </ResponsiveContainer>
           </div>
@@ -128,7 +128,7 @@ export default function Analytics() {
                     </Pie>
                     <RechartTooltip
                       formatter={(v: number, n: string) => [`${v}%`, n]}
-                      contentStyle={{ background: "hsl(262 16% 15%)", border: "1px solid hsl(262 18% 22%)", borderRadius: "12px", fontSize: "11px" }}
+                      contentStyle={{ background: "hsl(240 10% 7%)", border: "1px solid hsl(240 8% 13%)", borderRadius: "12px", fontSize: "11px" }}
                     />
                   </PieChart>
                 </ResponsiveContainer>

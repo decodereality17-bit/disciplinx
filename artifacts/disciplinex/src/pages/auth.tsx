@@ -19,9 +19,9 @@ export default function OnboardPage({ onComplete }: { onComplete: () => void }) 
   return (
     <div className="min-h-screen bg-background flex items-center justify-center p-4 relative overflow-hidden">
       <div className="pointer-events-none absolute inset-0 overflow-hidden" aria-hidden>
-        <div className="absolute -top-40 -right-40 size-[500px] rounded-full opacity-[0.07]" style={{ background: "radial-gradient(circle, hsl(290 65% 62%), transparent)" }} />
-        <div className="absolute -bottom-40 -left-40 size-[400px] rounded-full opacity-[0.06]" style={{ background: "radial-gradient(circle, hsl(246 65% 64%), transparent)" }} />
-        <div className="absolute top-1/3 left-1/4 size-[300px] rounded-full opacity-[0.04]" style={{ background: "radial-gradient(circle, hsl(290 65% 62%), transparent)" }} />
+        <div className="absolute -top-40 -right-40 size-[500px] rounded-full opacity-[0.06]" style={{ background: "radial-gradient(circle, hsl(258 52% 65%), transparent)" }} />
+        <div className="absolute -bottom-40 -left-40 size-[400px] rounded-full opacity-[0.05]" style={{ background: "radial-gradient(circle, hsl(222 56% 65%), transparent)" }} />
+        <div className="absolute top-1/3 left-1/4 size-[300px] rounded-full opacity-[0.03]" style={{ background: "radial-gradient(circle, hsl(258 52% 65%), transparent)" }} />
       </div>
 
       <motion.div

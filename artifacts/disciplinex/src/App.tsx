@@ -76,10 +76,10 @@ export default function App() {
           position="top-center"
           toastOptions={{
             style: {
-              background: "hsl(262 16% 15% / 0.9)",
-              border: "1px solid hsl(262 18% 22% / 0.6)",
-              backdropFilter: "blur(20px)",
-              color: "hsl(262 5% 97%)",
+              background: "hsl(240 10% 7% / 0.92)",
+              border: "1px solid hsl(240 8% 14% / 0.7)",
+              backdropFilter: "blur(28px)",
+              color: "hsl(0 0% 96%)",
             },
           }}
         />

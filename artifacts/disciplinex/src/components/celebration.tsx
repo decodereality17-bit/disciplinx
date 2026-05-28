@@ -14,8 +14,8 @@ type Particle = {
 type Props = { show: boolean; onDone?: () => void };
 
 const COLORS = [
-  "hsl(290 65% 72%)",
-  "hsl(246 65% 74%)",
+  "hsl(258 52% 72%)",
+  "hsl(222 56% 72%)",
   "hsl(155 52% 64%)",
   "hsl(38 90% 64%)",
   "hsl(12 70% 66%)",

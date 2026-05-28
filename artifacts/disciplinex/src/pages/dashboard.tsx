@@ -230,7 +230,7 @@ export default function Dashboard() {
                     </Pie>
                     <RechartTooltip
                       formatter={(v: number, n: string) => [`${v}%`, n]}
-                      contentStyle={{ background: "hsl(262 16% 15%)", border: "1px solid hsl(262 18% 22%)", borderRadius: "12px", fontSize: "11px" }}
+                      contentStyle={{ background: "hsl(240 10% 7%)", border: "1px solid hsl(240 8% 13%)", borderRadius: "12px", fontSize: "11px" }}
                     />
                   </PieChart>
                 </ResponsiveContainer>
@@ -255,17 +255,17 @@ export default function Dashboard() {
             <AreaChart data={m7} margin={{ top: 5, right: 5, bottom: 0, left: -20 }}>
               <defs>
                 <linearGradient id="areaGrad" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="5%" stopColor="hsl(290 65% 62%)" stopOpacity={0.3} />
-                  <stop offset="95%" stopColor="hsl(290 65% 62%)" stopOpacity={0} />
+                  <stop offset="5%" stopColor="hsl(258 52% 68%)" stopOpacity={0.2} />
+                  <stop offset="95%" stopColor="hsl(258 52% 68%)" stopOpacity={0} />
                 </linearGradient>
               </defs>
-              <XAxis dataKey="day" tick={{ fontSize: 11, fill: "hsl(262 8% 57%)" }} axisLine={false} tickLine={false} />
-              <YAxis domain={[0, 100]} tick={{ fontSize: 11, fill: "hsl(262 8% 57%)" }} axisLine={false} tickLine={false} />
+              <XAxis dataKey="day" tick={{ fontSize: 11, fill: "hsl(240 6% 46%)" }} axisLine={false} tickLine={false} />
+              <YAxis domain={[0, 100]} tick={{ fontSize: 11, fill: "hsl(240 6% 46%)" }} axisLine={false} tickLine={false} />
               <RechartTooltip
                 formatter={(v: number) => [`${v}%`, "Score"]}
-                contentStyle={{ background: "hsl(262 16% 15%)", border: "1px solid hsl(262 18% 22%)", borderRadius: "12px", fontSize: "11px" }}
+                contentStyle={{ background: "hsl(240 10% 7%)", border: "1px solid hsl(240 8% 13%)", borderRadius: "12px", fontSize: "11px" }}
               />
-              <Area type="monotone" dataKey="score" stroke="hsl(290 65% 62%)" strokeWidth={2} fill="url(#areaGrad)" dot={{ fill: "hsl(290 65% 62%)", r: 3, strokeWidth: 0 }} />
+              <Area type="monotone" dataKey="score" stroke="hsl(258 52% 68%)" strokeWidth={1.5} fill="url(#areaGrad)" dot={{ fill: "hsl(258 52% 68%)", r: 3, strokeWidth: 0 }} />
             </AreaChart>
           </ResponsiveContainer>
         </div>
