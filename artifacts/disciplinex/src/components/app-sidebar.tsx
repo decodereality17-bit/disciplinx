@@ -1,11 +1,10 @@
 import { Link, useLocation } from "wouter";
-import { LayoutDashboard, Calendar, BarChart3, Target, Brain, User, LogOut, Zap, Menu, X } from "lucide-react";
-import { useState } from "react";
+import { LayoutDashboard, Calendar, BarChart3, Target, Brain, User, LogOut, Zap } from "lucide-react";
 import { useAuth } from "@/lib/auth";
 import { useProfile } from "@/hooks/use-profile";
 import { useTasks } from "@/hooks/use-tasks";
 import { streakDays, disciplineScore, initials } from "@/lib/analytics";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion } from "framer-motion";
 
 const NAV = [
   { href: "/", icon: LayoutDashboard, label: "Dashboard" },
@@ -16,7 +15,7 @@ const NAV = [
   { href: "/profile", icon: User, label: "Profile" },
 ];
 
-function SidebarContent({ onNav }: { onNav?: () => void }) {
+function SidebarContent() {
   const [location] = useLocation();
   const { clearData } = useAuth();
   const { profile } = useProfile();
@@ -58,7 +57,6 @@ function SidebarContent({ onNav }: { onNav?: () => void }) {
             <Link
               key={href}
               href={href}
-              onClick={onNav}
               data-testid={`nav-${label.toLowerCase()}`}
               className={`flex items-center gap-2.5 rounded-2xl px-3 py-2.5 text-sm font-medium transition-all ${
                 active
@@ -94,9 +92,52 @@ function SidebarContent({ onNav }: { onNav?: () => void }) {
   );
 }
 
-export function AppSidebar() {
-  const [mobileOpen, setMobileOpen] = useState(false);
+function BottomNav() {
+  const [location] = useLocation();
 
+  return (
+    <nav className="fixed bottom-0 left-0 right-0 z-50 lg:hidden">
+      {/* Blur backdrop */}
+      <div className="absolute inset-0 bg-sidebar/90 backdrop-blur-xl border-t border-sidebar-border" />
+
+      <div className="relative flex items-center justify-around px-2 py-2 pb-[env(safe-area-inset-bottom,8px)]">
+        {NAV.map(({ href, icon: Icon, label }) => {
+          const active = href === "/" ? location === "/" : location.startsWith(href);
+          return (
+            <Link
+              key={href}
+              href={href}
+              data-testid={`nav-${label.toLowerCase()}`}
+              className="relative flex flex-col items-center gap-0.5 px-2 py-1.5 min-w-[44px]"
+            >
+              {active && (
+                <motion.div
+                  layoutId="bottom-nav-pill"
+                  className="absolute inset-0 rounded-2xl bg-primary/15"
+                  transition={{ type: "spring", stiffness: 380, damping: 32 }}
+                />
+              )}
+              <Icon
+                className={`relative size-5 transition-colors ${
+                  active ? "text-primary" : "text-muted-foreground"
+                }`}
+              />
+              <span
+                className={`relative text-[10px] font-medium leading-none transition-colors ${
+                  active ? "text-primary" : "text-muted-foreground"
+                }`}
+              >
+                {label}
+              </span>
+            </Link>
+          );
+        })}
+      </div>
+    </nav>
+  );
+}
+
+export function AppSidebar() {
   return (
     <>
       {/* Desktop sidebar */}
@@ -104,54 +145,8 @@ export function AppSidebar() {
         <SidebarContent />
       </aside>
 
-      {/* Mobile: top bar + drawer */}
-      <div className="lg:hidden">
-        {/* Top bar */}
-        <div className="fixed top-0 left-0 right-0 z-40 flex items-center justify-between px-4 h-14 bg-sidebar/95 backdrop-blur-sm border-b border-sidebar-border">
-          <div className="flex items-center gap-2">
-            <div className="size-7 rounded-xl bg-gradient-primary grid place-items-center">
-              <Zap className="size-3.5 text-white" />
-            </div>
-            <span className="font-bold text-sm">DisciplineX</span>
-          </div>
-          <button
-            onClick={() => setMobileOpen(true)}
-            className="p-2 rounded-xl hover:bg-muted transition"
-            data-testid="button-menu"
-          >
-            <Menu className="size-5" />
-          </button>
-        </div>
-        {/* Drawer */}
-        <AnimatePresence>
-          {mobileOpen && (
-            <>
-              <motion.div
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                exit={{ opacity: 0 }}
-                className="fixed inset-0 z-40 bg-black/60 backdrop-blur-sm"
-                onClick={() => setMobileOpen(false)}
-              />
-              <motion.div
-                initial={{ x: "-100%" }}
-                animate={{ x: 0 }}
-                exit={{ x: "-100%" }}
-                transition={{ type: "spring", damping: 28, stiffness: 280 }}
-                className="fixed top-0 left-0 bottom-0 z-50 w-64 bg-sidebar border-r border-sidebar-border"
-              >
-                <button
-                  onClick={() => setMobileOpen(false)}
-                  className="absolute top-4 right-4 p-1 rounded-xl hover:bg-muted transition text-muted-foreground"
-                >
-                  <X className="size-5" />
-                </button>
-                <SidebarContent onNav={() => setMobileOpen(false)} />
-              </motion.div>
-            </>
-          )}
-        </AnimatePresence>
-      </div>
+      {/* Mobile bottom nav */}
+      <BottomNav />
     </>
   );
 }
