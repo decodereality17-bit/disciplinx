@@ -1,7 +1,5 @@
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { supabase } from "@/lib/supabase";
-import { useAuth } from "@/lib/auth";
 import { X, Smile, Meh, Frown, Brain } from "lucide-react";
 import { toast } from "sonner";
 
@@ -12,25 +10,38 @@ const MOODS = [
   { label: "Struggling", value: "struggling", icon: Frown, color: "text-destructive border-destructive/40 bg-destructive/10" },
 ];
 
+const LS_KEY = "dx_checkins";
+
+type Checkin = { date: string; mood: string; intent: number };
+
+function getCheckins(): Checkin[] {
+  try { return JSON.parse(localStorage.getItem(LS_KEY) ?? "[]"); } catch { return []; }
+}
+
+function saveCheckin(entry: Checkin) {
+  const all = getCheckins().filter((c) => c.date !== entry.date);
+  all.unshift(entry);
+  localStorage.setItem(LS_KEY, JSON.stringify(all));
+}
+
+export function getTodayCheckin(): Checkin | null {
+  const today = new Date().toISOString().slice(0, 10);
+  return getCheckins().find((c) => c.date === today) ?? null;
+}
+
 type Props = { onClose: () => void };
 
 export function DailyCheckin({ onClose }: Props) {
-  const { user } = useAuth();
   const [mood, setMood] = useState("");
   const [intent, setIntent] = useState(3);
   const [saving, setSaving] = useState(false);
 
   async function save() {
     if (!mood) { toast.error("Please pick a mood"); return; }
-    if (!user) return;
     setSaving(true);
     const today = new Date().toISOString().slice(0, 10);
-    const { error } = await supabase.from("checkins").upsert(
-      { user_id: user.id, date: today, mood, intent },
-      { onConflict: "user_id,date" },
-    );
+    saveCheckin({ date: today, mood, intent });
     setSaving(false);
-    if (error) { toast.error("Could not save check-in"); return; }
     toast.success("Check-in saved. Let's conquer today.");
     onClose();
   }

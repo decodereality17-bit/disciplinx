@@ -25,23 +25,13 @@ import {
 import { Plus, Flame, Trophy, Clock, CheckCircle2, Circle, ChevronRight, Zap } from "lucide-react";
 import { motion } from "framer-motion";
 import { useEffect } from "react";
-import { supabase } from "@/lib/supabase";
-import { useAuth } from "@/lib/auth";
+import { getTodayCheckin } from "@/components/daily-checkin";
 
 function useTodayCheckin() {
   const [done, setDone] = useState<boolean | null>(null);
-  const { user } = useAuth();
   useEffect(() => {
-    if (!user) return;
-    const today = new Date().toISOString().slice(0, 10);
-    supabase
-      .from("checkins")
-      .select("id")
-      .eq("user_id", user.id)
-      .eq("date", today)
-      .single()
-      .then(({ data }) => setDone(!!data));
-  }, [user]);
+    setDone(!!getTodayCheckin());
+  }, []);
   return done;
 }
 
