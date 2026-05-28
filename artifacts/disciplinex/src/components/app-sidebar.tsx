@@ -18,7 +18,7 @@ const NAV = [
 
 function SidebarContent({ onNav }: { onNav?: () => void }) {
   const [location] = useLocation();
-  const { signOut } = useAuth();
+  const { clearData } = useAuth();
   const { profile } = useProfile();
   const tasks = useTasks();
   const streak = streakDays(tasks);
@@ -82,10 +82,10 @@ function SidebarContent({ onNav }: { onNav?: () => void }) {
           <p className="text-sm font-semibold truncate">{name}</p>
         </div>
         <button
-          onClick={() => signOut()}
-          data-testid="button-signout"
-          className="text-muted-foreground hover:text-foreground transition p-1 rounded-xl hover:bg-muted"
-          title="Sign out"
+          onClick={clearData}
+          data-testid="button-cleardata"
+          className="text-muted-foreground hover:text-destructive transition p-1 rounded-xl hover:bg-muted"
+          title="Clear all data"
         >
           <LogOut className="size-4" />
         </button>

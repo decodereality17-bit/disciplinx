@@ -29,7 +29,7 @@ export default function Profile() {
   const tasks = useTasks();
   const goals = useGoals();
   const { profile, isLoading } = useProfile();
-  const { signOut, user } = useAuth();
+  const { clearData } = useAuth();
   const updateProfile = useUpdateProfile();
   const [editing, setEditing] = useState(false);
   const [nameInput, setNameInput] = useState("");
@@ -121,7 +121,6 @@ export default function Profile() {
                   </button>
                 </div>
               )}
-              <p className="text-sm text-muted-foreground">{user?.email}</p>
               {profile?.created_at && (
                 <p className="text-xs text-muted-foreground mt-0.5">
                   Member since {new Date(profile.created_at).toLocaleDateString("en-US", { month: "long", year: "numeric" })}
@@ -193,12 +192,12 @@ export default function Profile() {
 
         {/* Sign out */}
         <button
-          onClick={() => signOut()}
-          data-testid="button-signout-profile"
+          onClick={clearData}
+          data-testid="button-cleardata-profile"
           className="w-full flex items-center justify-center gap-2 rounded-2xl border border-destructive/30 bg-destructive/8 py-3 text-sm font-medium text-destructive hover:bg-destructive/15 transition"
         >
           <LogOut className="size-4" />
-          Sign Out
+          Clear All Data
         </button>
       </div>
     </Layout>

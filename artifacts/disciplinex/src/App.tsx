@@ -1,10 +1,10 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { Router as WouterRouter, Switch, Route, Redirect } from "wouter";
+import { Router as WouterRouter, Switch, Route } from "wouter";
 import { Toaster } from "@/components/ui/sonner";
-import { AuthProvider, useAuth } from "@/lib/auth";
-import { Suspense, lazy } from "react";
+import { AuthProvider } from "@/lib/auth";
+import { Suspense, lazy, useState } from "react";
 
-const AuthPage = lazy(() => import("@/pages/auth"));
+const OnboardPage = lazy(() => import("@/pages/auth"));
 const Dashboard = lazy(() => import("@/pages/dashboard"));
 const Planner = lazy(() => import("@/pages/planner"));
 const Analytics = lazy(() => import("@/pages/analytics"));
@@ -15,7 +15,7 @@ const NotFound = lazy(() => import("@/pages/not-found"));
 
 const queryClient = new QueryClient({
   defaultOptions: {
-    queries: { staleTime: 1000 * 60, retry: 1 },
+    queries: { staleTime: 0, retry: 1 },
   },
 });
 
@@ -31,31 +31,33 @@ function LoadingScreen() {
   );
 }
 
-function ProtectedRoute({ component: Component }: { component: React.ComponentType }) {
-  const { user, loading } = useAuth();
-  if (loading) return <LoadingScreen />;
-  if (!user) return <Redirect to="/auth" />;
-  return <Component />;
-}
-
-function PublicOnlyRoute({ component: Component }: { component: React.ComponentType }) {
-  const { user, loading } = useAuth();
-  if (loading) return <LoadingScreen />;
-  if (user) return <Redirect to="/" />;
-  return <Component />;
+function isOnboarded() {
+  try {
+    const p = JSON.parse(localStorage.getItem("dx_profile") ?? "null");
+    return typeof p?.name === "string" && p.name.trim().length > 0;
+  } catch { return false; }
 }
 
 function AppRoutes() {
+  const [ready, setReady] = useState(() => isOnboarded());
+
+  if (!ready) {
+    return (
+      <Suspense fallback={<LoadingScreen />}>
+        <OnboardPage onComplete={() => setReady(true)} />
+      </Suspense>
+    );
+  }
+
   return (
     <Suspense fallback={<LoadingScreen />}>
       <Switch>
-        <Route path="/auth" component={() => <PublicOnlyRoute component={AuthPage} />} />
-        <Route path="/" component={() => <ProtectedRoute component={Dashboard} />} />
-        <Route path="/planner" component={() => <ProtectedRoute component={Planner} />} />
-        <Route path="/analytics" component={() => <ProtectedRoute component={Analytics} />} />
-        <Route path="/goals" component={() => <ProtectedRoute component={Goals} />} />
-        <Route path="/insights" component={() => <ProtectedRoute component={Insights} />} />
-        <Route path="/profile" component={() => <ProtectedRoute component={Profile} />} />
+        <Route path="/" component={Dashboard} />
+        <Route path="/planner" component={Planner} />
+        <Route path="/analytics" component={Analytics} />
+        <Route path="/goals" component={Goals} />
+        <Route path="/insights" component={Insights} />
+        <Route path="/profile" component={Profile} />
         <Route component={NotFound} />
       </Switch>
     </Suspense>

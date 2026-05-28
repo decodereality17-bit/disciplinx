@@ -1,10 +1,8 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { supabase, supabaseConfigured } from "@/lib/supabase";
-import { useAuth } from "@/lib/auth";
 
 export type Profile = { id: string; name: string | null; created_at: string };
 const LS_KEY = "dx_profile";
-const QKEY = (uid: string) => ["profile", uid];
+const QKEY = ["profile"];
 
 function getLocalProfile(): Profile {
   try {
@@ -19,39 +17,21 @@ function setLocalProfile(p: Profile) {
 }
 
 export function useProfile() {
-  const { user } = useAuth();
   const { data, isLoading } = useQuery({
-    queryKey: QKEY(user?.id ?? ""),
-    queryFn: async (): Promise<Profile | null> => {
-      if (!user) return null;
-      if (!supabaseConfigured || user.id === "local-user") return getLocalProfile();
-      const { data, error } = await supabase
-        .from("profiles")
-        .select("*")
-        .eq("id", user.id)
-        .single();
-      if (error && error.code !== "PGRST116") throw error;
-      return (data as Profile) ?? null;
-    },
-    enabled: !!user,
+    queryKey: QKEY,
+    queryFn: (): Profile => getLocalProfile(),
+    staleTime: 0,
   });
   return { profile: data ?? null, isLoading };
 }
 
 export function useUpdateProfile() {
-  const { user } = useAuth();
   const qc = useQueryClient();
   return useMutation({
     mutationFn: async (name: string) => {
-      if (!user) throw new Error("Not authenticated");
-      if (!supabaseConfigured || user.id === "local-user") {
-        const existing = getLocalProfile();
-        setLocalProfile({ ...existing, name: name.trim() });
-        return;
-      }
-      const { error } = await supabase.from("profiles").upsert({ id: user.id, name: name.trim() });
-      if (error) throw error;
+      const existing = getLocalProfile();
+      setLocalProfile({ ...existing, name: name.trim() });
     },
-    onSuccess: () => qc.invalidateQueries({ queryKey: QKEY(user?.id ?? "") }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: QKEY }),
   });
 }
