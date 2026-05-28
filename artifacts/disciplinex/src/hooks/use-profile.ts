@@ -1,9 +1,22 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { supabase } from "@/lib/supabase";
+import { supabase, supabaseConfigured } from "@/lib/supabase";
 import { useAuth } from "@/lib/auth";
 
 export type Profile = { id: string; name: string | null; created_at: string };
+const LS_KEY = "dx_profile";
 const QKEY = (uid: string) => ["profile", uid];
+
+function getLocalProfile(): Profile {
+  try {
+    const p = JSON.parse(localStorage.getItem(LS_KEY) ?? "null");
+    return p ?? { id: "local-user", name: null, created_at: new Date().toISOString() };
+  } catch {
+    return { id: "local-user", name: null, created_at: new Date().toISOString() };
+  }
+}
+function setLocalProfile(p: Profile) {
+  localStorage.setItem(LS_KEY, JSON.stringify(p));
+}
 
 export function useProfile() {
   const { user } = useAuth();
@@ -11,6 +24,7 @@ export function useProfile() {
     queryKey: QKEY(user?.id ?? ""),
     queryFn: async (): Promise<Profile | null> => {
       if (!user) return null;
+      if (!supabaseConfigured || user.id === "local-user") return getLocalProfile();
       const { data, error } = await supabase
         .from("profiles")
         .select("*")
@@ -30,9 +44,12 @@ export function useUpdateProfile() {
   return useMutation({
     mutationFn: async (name: string) => {
       if (!user) throw new Error("Not authenticated");
-      const { error } = await supabase
-        .from("profiles")
-        .upsert({ id: user.id, name: name.trim() });
+      if (!supabaseConfigured || user.id === "local-user") {
+        const existing = getLocalProfile();
+        setLocalProfile({ ...existing, name: name.trim() });
+        return;
+      }
+      const { error } = await supabase.from("profiles").upsert({ id: user.id, name: name.trim() });
       if (error) throw error;
     },
     onSuccess: () => qc.invalidateQueries({ queryKey: QKEY(user?.id ?? "") }),
