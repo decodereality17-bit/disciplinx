@@ -6,6 +6,7 @@ import { useTasks } from "@/hooks/use-tasks";
 import { useAuth } from "@/lib/auth";
 import { useGoals } from "@/hooks/use-goals";
 import { useDiscipline } from "@/hooks/use-momentum";
+import { StreakMeter } from "@/components/streak-meter";
 import { goalProgress } from "@/lib/analytics";
 import {
   streakDays, totalXP, todaysTasks,
@@ -30,7 +31,7 @@ export default function Profile() {
   const tasks = useTasks();
   const goals = useGoals();
   const { profile, isLoading } = useProfile();
-  const { clearData } = useAuth();
+  const { signOut, clearData } = useAuth();
   const updateProfile = useUpdateProfile();
   const [editing, setEditing] = useState(false);
   const [nameInput, setNameInput] = useState("");
@@ -150,6 +151,8 @@ export default function Profile() {
           ))}
         </div>
 
+        <StreakMeter tasks={tasks} />
+
         {/* Achievements */}
         <div className="rounded-2xl bg-card border border-card-border p-5 shadow-card">
           <h2 className="font-semibold mb-4">Achievements</h2>
@@ -192,15 +195,24 @@ export default function Profile() {
           )}
         </div>
 
-        {/* Sign out */}
-        <button
-          onClick={clearData}
-          data-testid="button-cleardata-profile"
-          className="w-full flex items-center justify-center gap-2 rounded-2xl border border-destructive/30 bg-destructive/8 py-3 text-sm font-medium text-destructive hover:bg-destructive/15 transition"
-        >
-          <LogOut className="size-4" />
-          Clear All Data
-        </button>
+        {/* Actions */}
+        <div className="space-y-2">
+          <button
+            onClick={signOut}
+            data-testid="button-signout-profile"
+            className="w-full flex items-center justify-center gap-2 rounded-2xl border border-border bg-muted/40 py-3 text-sm font-medium text-foreground hover:bg-muted transition"
+          >
+            <LogOut className="size-4" />
+            Sign Out
+          </button>
+          <button
+            onClick={clearData}
+            data-testid="button-cleardata-profile"
+            className="w-full flex items-center justify-center gap-2 rounded-2xl border border-destructive/20 bg-transparent py-2.5 text-xs font-medium text-destructive/70 hover:bg-destructive/8 hover:text-destructive transition"
+          >
+            Delete All Data
+          </button>
+        </div>
       </div>
     </Layout>
   );

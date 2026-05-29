@@ -1,8 +1,8 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Router as WouterRouter, Switch, Route } from "wouter";
 import { Toaster } from "@/components/ui/sonner";
-import { AuthProvider } from "@/lib/auth";
-import { Suspense, lazy, useState } from "react";
+import { AuthProvider, useAuth } from "@/lib/auth";
+import { Suspense, lazy } from "react";
 
 const OnboardPage = lazy(() => import("@/pages/auth"));
 const Dashboard = lazy(() => import("@/pages/dashboard"));
@@ -31,20 +31,13 @@ function LoadingScreen() {
   );
 }
 
-function isOnboarded() {
-  try {
-    const p = JSON.parse(localStorage.getItem("dx_profile") ?? "null");
-    return typeof p?.name === "string" && p.name.trim().length > 0;
-  } catch { return false; }
-}
-
 function AppRoutes() {
-  const [ready, setReady] = useState(() => isOnboarded());
+  const { user } = useAuth();
 
-  if (!ready) {
+  if (!user) {
     return (
       <Suspense fallback={<LoadingScreen />}>
-        <OnboardPage onComplete={() => setReady(true)} />
+        <OnboardPage />
       </Suspense>
     );
   }

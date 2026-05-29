@@ -1,23 +1,112 @@
 import { useState } from "react";
-import { Brain, User } from "lucide-react";
-import { motion } from "framer-motion";
+import { Brain, Mail, Lock, User, Eye, EyeOff, AlertCircle, Loader2 } from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
+import { useAuth, getAccount } from "@/lib/auth";
 
-export default function OnboardPage({ onComplete }: { onComplete: () => void }) {
-  const [name, setName] = useState("");
-  const [submitted, setSubmitted] = useState(false);
+function hasExistingAccount(): boolean {
+  return !!getAccount();
+}
 
-  function handleStart(e: React.FormEvent) {
+type FieldProps = {
+  icon: React.ElementType;
+  type: string;
+  placeholder: string;
+  value: string;
+  onChange: (v: string) => void;
+  autoFocus?: boolean;
+  autoComplete?: string;
+  trailing?: React.ReactNode;
+};
+
+function Field({ icon: Icon, type, placeholder, value, onChange, autoFocus, autoComplete, trailing }: FieldProps) {
+  return (
+    <div className="relative">
+      <Icon className="absolute left-3.5 top-1/2 -translate-y-1/2 size-4 text-muted-foreground pointer-events-none" />
+      <input
+        type={type}
+        placeholder={placeholder}
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        autoFocus={autoFocus}
+        autoComplete={autoComplete}
+        className="w-full rounded-2xl bg-input pl-10 pr-4 py-3 text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/50 border border-border transition"
+      />
+      {trailing && (
+        <div className="absolute right-3 top-1/2 -translate-y-1/2">{trailing}</div>
+      )}
+    </div>
+  );
+}
+
+function ErrorBanner({ msg }: { msg: string }) {
+  return (
+    <div className="flex items-start gap-2 rounded-xl bg-destructive/10 border border-destructive/25 px-3 py-2.5 text-xs text-destructive">
+      <AlertCircle className="size-3.5 shrink-0 mt-0.5" />
+      <span>{msg}</span>
+    </div>
+  );
+}
+
+export default function OnboardPage() {
+  const auth = useAuth();
+  const [tab, setTab] = useState<"signin" | "signup">(() => hasExistingAccount() ? "signin" : "signup");
+
+  // Sign In
+  const [siEmail, setSiEmail] = useState("");
+  const [siPassword, setSiPassword] = useState("");
+  const [siError, setSiError] = useState("");
+  const [siLoading, setSiLoading] = useState(false);
+  const [showSiPw, setShowSiPw] = useState(false);
+
+  // Sign Up
+  const [suName, setSuName] = useState("");
+  const [suEmail, setSuEmail] = useState("");
+  const [suPassword, setSuPassword] = useState("");
+  const [suConfirm, setSuConfirm] = useState("");
+  const [suError, setSuError] = useState("");
+  const [suLoading, setSuLoading] = useState(false);
+  const [showSuPw, setShowSuPw] = useState(false);
+
+  async function handleSignIn(e: React.FormEvent) {
     e.preventDefault();
-    const trimmed = name.trim();
-    if (!trimmed) return;
-    setSubmitted(true);
-    const profile = { id: "local-user", name: trimmed, created_at: new Date().toISOString() };
-    localStorage.setItem("dx_profile", JSON.stringify(profile));
-    setTimeout(() => onComplete(), 300);
+    setSiError("");
+    if (!siEmail || !siPassword) { setSiError("Please fill in all fields."); return; }
+    setSiLoading(true);
+    try {
+      await auth.signIn(siEmail, siPassword);
+    } catch (err) {
+      setSiError(err instanceof Error ? err.message : "Sign in failed.");
+    } finally {
+      setSiLoading(false);
+    }
   }
+
+  async function handleSignUp(e: React.FormEvent) {
+    e.preventDefault();
+    setSuError("");
+    if (!suName.trim()) { setSuError("Please enter your name."); return; }
+    if (!/\S+@\S+\.\S+/.test(suEmail)) { setSuError("Please enter a valid email address."); return; }
+    if (suPassword.length < 6) { setSuError("Password must be at least 6 characters."); return; }
+    if (suPassword !== suConfirm) { setSuError("Passwords don't match."); return; }
+    setSuLoading(true);
+    try {
+      await auth.signUp(suName, suEmail, suPassword);
+    } catch (err) {
+      setSuError(err instanceof Error ? err.message : "Sign up failed.");
+    } finally {
+      setSuLoading(false);
+    }
+  }
+
+  const pwToggle = (show: boolean, set: (v: boolean) => void) => (
+    <button type="button" onClick={() => set(!show)} className="text-muted-foreground hover:text-foreground transition p-1">
+      {show ? <EyeOff className="size-4" /> : <Eye className="size-4" />}
+    </button>
+  );
 
   return (
     <div className="min-h-screen bg-background flex items-center justify-center p-4 relative overflow-hidden">
+      {/* Background glows */}
       <div className="pointer-events-none absolute inset-0 overflow-hidden" aria-hidden>
         <div className="absolute -top-40 -right-40 size-[500px] rounded-full opacity-[0.06]" style={{ background: "radial-gradient(circle, hsl(258 52% 65%), transparent)" }} />
         <div className="absolute -bottom-40 -left-40 size-[400px] rounded-full opacity-[0.05]" style={{ background: "radial-gradient(circle, hsl(222 56% 65%), transparent)" }} />
@@ -30,7 +119,8 @@ export default function OnboardPage({ onComplete }: { onComplete: () => void }) 
         transition={{ duration: 0.5, ease: "easeOut" }}
         className="w-full max-w-sm relative"
       >
-        <div className="text-center mb-10">
+        {/* Brand header */}
+        <div className="text-center mb-8">
           <motion.div
             initial={{ scale: 0.8, opacity: 0 }}
             animate={{ scale: 1, opacity: 1 }}
@@ -57,41 +147,140 @@ export default function OnboardPage({ onComplete }: { onComplete: () => void }) 
           </motion.p>
         </div>
 
+        {/* Card */}
         <motion.div
           initial={{ opacity: 0, y: 16 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.35 }}
           className="glass rounded-3xl p-7 shadow-elevated"
         >
-          <h2 className="text-lg font-semibold mb-1">What should we call you?</h2>
-          <p className="text-sm text-muted-foreground mb-6">
-            This is how you'll appear on your dashboard and profile.
-          </p>
+          {/* Tabs */}
+          <div className="flex rounded-2xl bg-muted p-1 mb-6 gap-1">
+            {(["signin", "signup"] as const).map((t) => (
+              <button
+                key={t}
+                type="button"
+                onClick={() => { setTab(t); setSiError(""); setSuError(""); }}
+                className={`flex-1 rounded-xl py-2 text-sm font-semibold transition ${
+                  tab === t
+                    ? "bg-card text-foreground shadow-sm"
+                    : "text-muted-foreground hover:text-foreground"
+                }`}
+              >
+                {t === "signin" ? "Sign In" : "Create Account"}
+              </button>
+            ))}
+          </div>
 
-          <form onSubmit={handleStart} className="space-y-4">
-            <div className="relative">
-              <User className="absolute left-3.5 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
-              <input
-                type="text"
-                placeholder="Your name"
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                autoFocus
-                maxLength={40}
-                data-testid="input-name"
-                className="w-full rounded-2xl bg-input pl-10 pr-4 py-3 text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/50 border border-border transition"
-              />
-            </div>
-
-            <button
-              type="submit"
-              disabled={!name.trim() || submitted}
-              data-testid="button-start"
-              className="w-full rounded-2xl bg-gradient-primary py-3 text-sm font-semibold text-white shadow-glow hover:scale-[1.01] active:scale-95 transition disabled:opacity-50 disabled:pointer-events-none"
-            >
-              {submitted ? "Let's go…" : "Start my journey →"}
-            </button>
-          </form>
+          <AnimatePresence mode="wait">
+            {tab === "signin" ? (
+              <motion.form
+                key="signin"
+                onSubmit={handleSignIn}
+                initial={{ opacity: 0, x: -10 }}
+                animate={{ opacity: 1, x: 0 }}
+                exit={{ opacity: 0, x: 10 }}
+                transition={{ duration: 0.18 }}
+                className="space-y-3"
+              >
+                {siError && <ErrorBanner msg={siError} />}
+                <Field
+                  icon={Mail}
+                  type="email"
+                  placeholder="Email address"
+                  value={siEmail}
+                  onChange={setSiEmail}
+                  autoFocus
+                  autoComplete="email"
+                />
+                <Field
+                  icon={Lock}
+                  type={showSiPw ? "text" : "password"}
+                  placeholder="Password"
+                  value={siPassword}
+                  onChange={setSiPassword}
+                  autoComplete="current-password"
+                  trailing={pwToggle(showSiPw, setShowSiPw)}
+                />
+                <button
+                  type="submit"
+                  disabled={siLoading}
+                  className="w-full rounded-2xl bg-gradient-primary py-3 text-sm font-semibold text-white shadow-glow hover:scale-[1.01] active:scale-95 transition disabled:opacity-60 disabled:pointer-events-none flex items-center justify-center gap-2"
+                >
+                  {siLoading && <Loader2 className="size-4 animate-spin" />}
+                  Sign In
+                </button>
+                <p className="text-center text-xs text-muted-foreground pt-1">
+                  No account yet?{" "}
+                  <button type="button" onClick={() => setTab("signup")} className="text-primary hover:underline font-medium">
+                    Create one
+                  </button>
+                </p>
+              </motion.form>
+            ) : (
+              <motion.form
+                key="signup"
+                onSubmit={handleSignUp}
+                initial={{ opacity: 0, x: 10 }}
+                animate={{ opacity: 1, x: 0 }}
+                exit={{ opacity: 0, x: -10 }}
+                transition={{ duration: 0.18 }}
+                className="space-y-3"
+              >
+                {suError && <ErrorBanner msg={suError} />}
+                <Field
+                  icon={User}
+                  type="text"
+                  placeholder="Your name"
+                  value={suName}
+                  onChange={setSuName}
+                  autoFocus
+                  autoComplete="name"
+                />
+                <Field
+                  icon={Mail}
+                  type="email"
+                  placeholder="Email address"
+                  value={suEmail}
+                  onChange={setSuEmail}
+                  autoComplete="email"
+                />
+                <Field
+                  icon={Lock}
+                  type={showSuPw ? "text" : "password"}
+                  placeholder="Password (min 6 chars)"
+                  value={suPassword}
+                  onChange={setSuPassword}
+                  autoComplete="new-password"
+                  trailing={pwToggle(showSuPw, setShowSuPw)}
+                />
+                <Field
+                  icon={Lock}
+                  type={showSuPw ? "text" : "password"}
+                  placeholder="Confirm password"
+                  value={suConfirm}
+                  onChange={setSuConfirm}
+                  autoComplete="new-password"
+                />
+                <button
+                  type="submit"
+                  disabled={suLoading}
+                  className="w-full rounded-2xl bg-gradient-primary py-3 text-sm font-semibold text-white shadow-glow hover:scale-[1.01] active:scale-95 transition disabled:opacity-60 disabled:pointer-events-none flex items-center justify-center gap-2"
+                >
+                  {suLoading && <Loader2 className="size-4 animate-spin" />}
+                  Create Account
+                </button>
+                {hasExistingAccount() && (
+                  <p className="text-center text-xs text-muted-foreground pt-1">
+                    Already have an account?{" "}
+                    <button type="button" onClick={() => setTab("signin")} className="text-primary hover:underline font-medium">
+                      Sign in
+                    </button>
+                  </p>
+                )}
+              </motion.form>
+            )}
+          </AnimatePresence>
         </motion.div>
 
         <motion.p

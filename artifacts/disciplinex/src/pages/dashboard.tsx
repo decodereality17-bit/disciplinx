@@ -11,6 +11,7 @@ import { AnimatedNumber } from "@/components/animated-number";
 import { useTasks, useToggleTask } from "@/hooks/use-tasks";
 import { useProfile } from "@/hooks/use-profile";
 import { useDiscipline } from "@/hooks/use-momentum";
+import { StreakMeter } from "@/components/streak-meter";
 import {
   streakDays, totalXP, completionPct, todaysTasks,
   momentum7d, subjectMix, generateInsights, firstName,
@@ -259,6 +260,9 @@ export default function Dashboard() {
             <p className="text-xs text-muted-foreground">Total XP</p>
           </motion.div>
         </div>
+
+        {/* ── Streak meter ─────────────────────────────────────────── */}
+        <StreakMeter tasks={tasks} />
 
         {/* ── Tier progress bar ────────────────────────────────────── */}
         <div className="rounded-2xl bg-card border border-card-border px-5 py-4 shadow-card">

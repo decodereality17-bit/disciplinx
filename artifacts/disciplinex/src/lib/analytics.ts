@@ -68,6 +68,26 @@ export function streakDays(tasks: Task[]) {
   return n;
 }
 
+export function longestStreak(tasks: Task[]): number {
+  const dates = Array.from(
+    new Set(
+      tasks
+        .filter((t) => t.done && t.completed_at)
+        .map((t) => t.completed_at as string)
+    )
+  ).sort();
+  if (!dates.length) return 0;
+  let max = 1, current = 1;
+  for (let i = 1; i < dates.length; i++) {
+    const diff = Math.round(
+      (new Date(dates[i]).getTime() - new Date(dates[i - 1]).getTime()) / 86_400_000
+    );
+    if (diff === 1) { current++; if (current > max) max = current; }
+    else { current = 1; }
+  }
+  return max;
+}
+
 export function totalXP(tasks: Task[]) {
   return tasks.filter((t) => t.done).reduce((a, t) => a + t.duration * 4, 0);
 }
