@@ -1,1 +1,1 @@
-export function Toaster() { return null; }
+export function Toaster(props: any) { return null; }
